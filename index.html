@@ -165,6 +165,7 @@ function hit() {
     render();
 
     if (handValue(player) > 21) {
+        render(true);   // SHOW DEALER CARDS IMMEDIATELY
         endGame("Bust! You lose 😭");
     }
 }
