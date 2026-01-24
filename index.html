@@ -17,9 +17,22 @@ body {
 }
 
 .cards {
-    min-height: 40px;
+    min-height: 50px;
     margin: 10px 0;
     font-size: 22px;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+}
+.card {
+    background: white;
+    color: black;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-weight: bold;
+    min-width: 40px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.4);
 }
 
 button {
@@ -202,20 +215,20 @@ function endGame(msg) {
 }
 
 function render(showDealer = false) {
-    playerCardsEl.innerText =
-        player.map(c => c.value + c.suit).join(" ") +
-        " (" + handValue(player) + ")";
+    playerCardsEl.innerHTML =
+        player.map(c => `<div class="card">${c.value}${c.suit}</div>`).join("") +
+        `<div class="card">(${handValue(player)})</div>`;
 
     if (showDealer) {
-        dealerCardsEl.innerText =
-            dealer.map(c => c.value + c.suit).join(" ") +
-            " (" + handValue(dealer) + ")";
+        dealerCardsEl.innerHTML =
+            dealer.map(c => `<div class="card">${c.value}${c.suit}</div>`).join("") +
+            `<div class="card">(${handValue(dealer)})</div>`;
     } else {
-        dealerCardsEl.innerText =
-            dealer[0].value + dealer[0].suit + " ??";
+        dealerCardsEl.innerHTML =
+            `<div class="card">${dealer[0].value}${dealer[0].suit}</div>` +
+            `<div class="card">??</div>`;
     }
-}
-
+    }
 function updateCoins() {
     coinsEl.innerText = coins;
 }
