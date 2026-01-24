@@ -75,7 +75,7 @@ input {
 
     
     <div>
-    Coins: <span id="coins">1000</span>
+    Coins: <span id="coins"></span>
     <button id="addMoneyBtn">+ Add Money</button>
     </div>
 
@@ -261,6 +261,8 @@ function setStatus(msg) {
 dealBtn.addEventListener("click", deal);
 hitBtn.addEventListener("click", hit);
 standBtn.addEventListener("click", stand);
+    
+    updateCoins();
 </script>
 </body>
 </html>
