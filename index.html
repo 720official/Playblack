@@ -74,6 +74,10 @@ input {
     <h1>♠ Blackjack ♣</h1>
 
     <div>Coins: <span id="coins">1000</span></div>
+    <div>
+    Coins: <span id="coins">1000</span>
+    <button id="addMoneyBtn">+ Add Money</button>
+    </div>
 
     <div class="bet">
         Bet: <input type="number" id="betAmount" value="100" min="1">
@@ -98,7 +102,8 @@ input {
 let deck = [];
 let player = [];
 let dealer = [];
-let coins = 1000;
+let savedCoins = localStorage.getItem("blackjackCoins");
+let coins = savedCoins ? parseInt(savedCoins) : 1000;
 let bet = 0;
 let gameActive = false;
 
@@ -109,6 +114,18 @@ const statusEl = document.getElementById("status");
 const hitBtn = document.getElementById("hitBtn");
 const standBtn = document.getElementById("standBtn");
 const dealBtn = document.getElementById("dealBtn");
+const addMoneyBtn = document.getElementById("addMoneyBtn");
+
+    addMoneyBtn.addEventListener("click", () => {
+    let amount = prompt("How much money to add? 💰");
+
+    amount = parseInt(amount);
+    if (isNaN(amount) || amount <= 0) return;
+
+    coins += amount;
+    saveCoins();
+    updateCoins();
+});
 
 function createDeck() {
     const suits = ["♠", "♥", "♦", "♣"];
@@ -229,10 +246,14 @@ function render(showDealer = false) {
             `<div class="card">??</div>`;
     }
     }
-function updateCoins() {
-    coinsEl.innerText = coins;
+function saveCoins() {
+    localStorage.setItem("blackjackCoins", coins);
 }
 
+function updateCoins() {
+    coinsEl.innerText = coins;
+    saveCoins();
+    }
 function setStatus(msg) {
     statusEl.innerText = msg;
 }
