@@ -99,6 +99,7 @@ input {
 </div>
 
 <script>
+    
 let deck = [];
 let player = [];
 let dealer = [];
@@ -106,7 +107,8 @@ let savedCoins = localStorage.getItem("blackjackCoins");
 let coins = savedCoins ? parseInt(savedCoins) : 1000;
 let bet = 0;
 let gameActive = false;
-
+    
+const MAX_SCORE = 31;
 const coinsEl = document.getElementById("coins");
 const dealerCardsEl = document.getElementById("dealerCards");
 const playerCardsEl = document.getElementById("playerCards");
@@ -193,7 +195,7 @@ function hit() {
 
     player.push(deck.pop());
 
-    if (handValue(player) > 21) {
+    if (handValue(player) > MAX_SCORE) {
         render(true);              // show dealer first
         endGame("Bust! You lose 😭");
     } else {
@@ -211,7 +213,7 @@ function stand() {
     const p = handValue(player);
     const d = handValue(dealer);
 
-    if (d > 21 || p > d) {
+    if (d > MAX_SCORE || p > d) {
         coins += bet * 2;
         endGame("You win 🤑");
     } else if (p === d) {
