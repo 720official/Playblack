@@ -162,11 +162,12 @@ function hit() {
     if (!gameActive) return;
 
     player.push(deck.pop());
-    render();
 
     if (handValue(player) > 21) {
-        render(true);   // SHOW DEALER CARDS IMMEDIATELY
+        render(true);              // show dealer first
         endGame("Bust! You lose 😭");
+    } else {
+        render();                 // normal hit render
     }
 }
 
