@@ -1,0 +1,224 @@
+<!DOCTYPE html><html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Blackjack</title>
+<style>
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: radial-gradient(circle at center, #2e7d32, #1b5e20);
+        color: #fff;
+        text-align: center;
+    }.table {
+    padding: 30px;
+}
+
+h1 {
+    margin-bottom: 10px;
+}
+
+.cards {
+    min-height: 40px;
+    margin: 10px 0;
+    font-size: 20px;
+}
+
+.controls button {
+    margin: 5px;
+    padding: 10px 16px;
+    font-size: 16px;
+    cursor: pointer;
+    border: none;
+    border-radius: 4px;
+}
+
+button {
+    background: #fbc02d;
+    color: #000;
+}
+
+button:disabled {
+    background: #777;
+    cursor: not-allowed;
+}
+
+.bet {
+    margin: 15px 0;
+}
+
+input {
+    padding: 6px;
+    width: 80px;
+    text-align: center;
+}
+
+.status {
+    margin-top: 15px;
+    font-size: 18px;
+    min-height: 24px;
+}
+
+</style>
+</head>
+<body><div class="table">
+    <h1>♠ Blackjack ♣</h1>
+    <div>Coins: <span id="coins">1000</span></div><div class="bet">
+    Bet: <input type="number" id="betAmount" value="100" min="1">
+    <button id="dealBtn">Deal</button>
+</div>
+
+<h3>Dealer</h3>
+<div id="dealerCards" class="cards"></div>
+
+<h3>You</h3>
+<div id="playerCards" class="cards"></div>
+
+<div class="controls">
+    <button id="hitBtn" disabled>Hit</button>
+    <button id="standBtn" disabled>Stand</button>
+</div>
+
+<div class="status" id="status"></div>
+
+</div><script>
+let deck = [];
+let player = [];
+let dealer = [];
+let coins = 1000;
+let bet = 0;
+let gameActive = false;
+
+const coinsEl = document.getElementById("coins");
+const dealerCardsEl = document.getElementById("dealerCards");
+const playerCardsEl = document.getElementById("playerCards");
+const statusEl = document.getElementById("status");
+const hitBtn = document.getElementById("hitBtn");
+const standBtn = document.getElementById("standBtn");
+const dealBtn = document.getElementById("dealBtn");
+
+function createDeck() {
+    const suits = ["♠", "♥", "♦", "♣"];
+    const values = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
+    deck = [];
+    for (let s of suits) {
+        for (let v of values) {
+            deck.push({value: v, suit: s});
+        }
+    }
+    deck.sort(() => Math.random() - 0.5);
+}
+
+function cardValue(card) {
+    if (card.value === "A") return 11;
+    if (["K","Q","J"].includes(card.value)) return 10;
+    return parseInt(card.value);
+}
+
+function handValue(hand) {
+    let total = 0;
+    let aces = 0;
+    for (let c of hand) {
+        total += cardValue(c);
+        if (c.value === "A") aces++;
+    }
+    while (total > 21 && aces > 0) {
+        total -= 10;
+        aces--;
+    }
+    return total;
+}
+
+function deal() {
+    if (gameActive) return;
+
+    bet = parseInt(document.getElementById("betAmount").value);
+    if (isNaN(bet) || bet > coins || bet <= 0) {
+        setStatus("Invalid bet.");
+        return;
+    }
+
+    createDeck();
+    player = [deck.pop(), deck.pop()];
+    dealer = [deck.pop(), deck.pop()];
+    gameActive = true;
+
+    coins -= bet;
+    updateCoins();
+
+    hitBtn.disabled = false;
+    standBtn.disabled = false;
+
+    render();
+    setStatus("Good luck 🍀");
+}
+
+function hit() {
+    if (!gameActive) return;
+
+    player.push(deck.pop());
+    render();
+
+    if (handValue(player) > 21) {
+        endGame("Bust! You lose 😭");
+    }
+}
+
+function stand() {
+    if (!gameActive) return;
+
+    while (handValue(dealer) < 17) {
+        dealer.push(deck.pop());
+    }
+
+    const p = handValue(player);
+    const d = handValue(dealer);
+
+    if (d > 21 || p > d) {
+        coins += bet * 2;
+        endGame("You win 🤑");
+    } else if (p === d) {
+        coins += bet;
+        endGame("Push 🤝");
+    } else {
+        endGame("Dealer wins 😔");
+    }
+}
+
+function endGame(msg) {
+    gameActive = false;
+    hitBtn.disabled = true;
+    standBtn.disabled = true;
+    updateCoins();
+    render(true);
+    setStatus(msg);
+}
+
+function render(showDealer = false) {
+    playerCardsEl.innerText =
+        player.map(c => c.value + c.suit).join(" ") +
+        " (" + handValue(player) +" (" + handValue(player) + ")";
+
+    if (showDealer) {
+        dealerCardsEl.innerText =
+            dealer.map(c => c.value + c.suit).join(" ") +
+            " (" + handValue(dealer) + ")";
+    } else {
+        dealerCardsEl.innerText =
+            dealer[0].value + dealer[0].suit + " ??";
+    }
+}
+
+function updateCoins() {
+    coinsEl.innerText = coins;
+}
+
+function setStatus(msg) {
+    statusEl.innerText = msg;
+}
+
+dealBtn.addEventListener("click", deal);
+hitBtn.addEventListener("click", hit);
+standBtn.addEventListener("click", stand);
+</script>
+</body>
+</html>
