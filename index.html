@@ -3,38 +3,848 @@
 <head>
 <meta charset="UTF-8">
 <title>Blackjack</title>
+<link href="https://fonts.googleapis.com/css2?family=Pricedown&family=Oswald:wght@400;700&family=Bebas+Neue&display=swap" rel="stylesheet">
 <style>
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: radial-gradient(circle at center, #2e7d32, #1b5e20);
-    color: #fff;
-    text-align: center;
-}
+  :root {
+    --felt-green: #1a6b35;
+    --felt-dark: #0f4a24;
+    --felt-light: #2a8a47;
+    --wood-dark: #3e1f05;
+    --wood-mid: #6b3a10;
+    --wood-light: #a0582a;
+    --gold: #f0c040;
+    --gold-dark: #c8972a;
+    --card-white: #f9f5ec;
+    --red: #cc2200;
+    --black-card: #1a1a1a;
+    --btn-hit: #e8c020;
+    --btn-stand: #d04020;
+    --gta-money: #73e840;
+    --gta-money-shadow: #1a6600;
+  }
 
-.table {
-    padding: 30px;
-}
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-.cards {
-    min-height: 50px;
-    margin: 10px 0;
-    font-size: 22px;
+  body {
+    font-family: 'Oswald', sans-serif;
+    background: #0a0a0a;
+    min-height: 100vh;
     display: flex;
+    align-items: center;
     justify-content: center;
-    gap: 8px;
-}
-.card {
-    background: white;
-    color: black;
-    padding: 8px 12px;
+    overflow: hidden;
+  }
+
+  /* ─── TABLE WRAPPER ─── */
+  #table-wrap {
+    width: 820px;
+    height: 580px;
+    position: relative;
+    border-radius: 300px / 200px;
+    background:
+      radial-gradient(ellipse 60% 55% at 50% 50%, var(--felt-light) 0%, var(--felt-green) 40%, var(--felt-dark) 100%);
+    box-shadow:
+      0 0 0 18px var(--wood-mid),
+      0 0 0 28px var(--wood-dark),
+      0 0 0 32px var(--wood-light),
+      0 0 0 44px var(--wood-dark),
+      0 30px 80px rgba(0,0,0,0.8);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Felt texture overlay */
+  #table-wrap::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 300px / 200px;
+    background-image:
+      repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+    pointer-events: none;
+  }
+
+  /* Decorative inner ring */
+  #table-wrap::after {
+    content: '';
+    position: absolute;
+    inset: 20px;
+    border-radius: 280px / 180px;
+    border: 2px solid rgba(255,255,255,0.07);
+    pointer-events: none;
+  }
+
+  /* ─── GTA MONEY HUD ─── */
+  #money-hud {
+    position: absolute;
+    top: 28px;
+    right: 48px;
+    text-align: right;
+    z-index: 10;
+    pointer-events: none;
+  }
+  #money-hud .label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    letter-spacing: 3px;
+    color: rgba(115,232,64,0.7);
+    text-shadow: 0 0 8px var(--gta-money-shadow);
+  }
+  #money-hud .amount {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 42px;
+    line-height: 1;
+    color: var(--gta-money);
+    text-shadow:
+      2px 2px 0 var(--gta-money-shadow),
+      0 0 20px rgba(115,232,64,0.4);
+    letter-spacing: 2px;
+  }
+  #money-hud .amount::before { content: '$'; font-size: 28px; vertical-align: super; margin-right: 2px; }
+
+  /* ─── SCREENS ─── */
+  .screen { display: none; flex-direction: column; align-items: center; width: 100%; }
+  .screen.active { display: flex; }
+
+  /* ─── COIN SHOP SCREEN ─── */
+  #shop-screen {
+    gap: 16px;
+    padding: 20px;
+  }
+
+  #shop-screen h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    letter-spacing: 6px;
+    color: var(--gold);
+    text-shadow: 2px 2px 0 var(--gold-dark), 0 0 20px rgba(240,192,64,0.4);
+    margin-bottom: 4px;
+  }
+
+  .shop-subtitle {
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 8px;
+  }
+
+  /* Coin stack visual */
+  #coin-stack-display {
+    position: relative;
+    height: 80px;
+    width: 120px;
+    margin: 0 auto 4px;
+  }
+  .coin-layer {
+    position: absolute;
+    width: 80px;
+    height: 20px;
+    left: 20px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, #f5d060 30%, #c8900a 100%);
+    border: 2px solid #a07010;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    transition: all 0.3s ease;
+  }
+
+  /* Amount selector */
+  .shop-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .shop-row label {
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: rgba(255,255,255,0.6);
+    text-transform: uppercase;
+  }
+
+  .amount-control {
+    display: flex;
+    align-items: center;
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(255,255,255,0.15);
     border-radius: 6px;
-    font-weight: bold;
-    min-width: 40px;
+    overflow: hidden;
+  }
+
+  .amount-control button {
+    background: rgba(0,0,0,0.3);
+    border: none;
+    color: var(--gold);
+    font-size: 20px;
+    font-family: 'Bebas Neue', sans-serif;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    transition: background 0.15s;
+    line-height: 1;
+  }
+  .amount-control button:hover { background: rgba(240,192,64,0.2); }
+
+  .amount-control span {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    color: #fff;
+    min-width: 80px;
     text-align: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+    padding: 0 8px;
+    letter-spacing: 1px;
+  }
+
+  /* Add money row */
+  .add-money-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0,0,0,0.2);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 6px;
+    padding: 8px 12px;
+  }
+  .add-money-row input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(255,255,255,0.3);
+    color: var(--gta-money);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    width: 90px;
+    text-align: center;
+    outline: none;
+    letter-spacing: 1px;
+  }
+  .add-money-row input::placeholder { color: rgba(115,232,64,0.3); }
+  .add-money-row label {
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+  }
+
+  /* Confirm button */
+  #confirm-btn {
+    margin-top: 6px;
+    background: linear-gradient(180deg, #f0c040 0%, #c07010 100%);
+    border: none;
+    border-bottom: 4px solid #804000;
+    color: #1a0800;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 4px;
+    padding: 12px 48px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.1s;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.3);
+    box-shadow: 0 4px 15px rgba(240,192,64,0.3);
+  }
+  #confirm-btn:hover {
+    background: linear-gradient(180deg, #f8d060 0%, #d08020 100%);
+    box-shadow: 0 4px 25px rgba(240,192,64,0.5);
+  }
+  #confirm-btn:active {
+    transform: translateY(2px);
+    border-bottom-width: 2px;
+  }
+
+  /* ─── GAME SCREEN ─── */
+  #game-screen {
+    justify-content: space-between;
+    height: 100%;
+    padding: 14px 30px 20px;
+    gap: 0;
+  }
+
+  /* Title bar */
+  .game-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 8px;
+    color: rgba(255,255,255,0.25);
+    text-align: center;
+    margin-top: 2px;
+  }
+
+  /* Dealer zone */
+  .dealer-zone, .player-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .zone-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 14px;
+    letter-spacing: 4px;
+    color: rgba(255,255,255,0.4);
+  }
+
+  .score-badge {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    color: var(--gold);
+    text-shadow: 1px 1px 0 var(--gold-dark);
+    min-height: 24px;
+  }
+
+  /* Cards row */
+  .cards-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: flex-end;
+    min-height: 100px;
+  }
+
+  /* ─── CARDS ─── */
+  .card-wrap {
+    width: 64px;
+    height: 90px;
+    perspective: 400px;
+  }
+
+  .card-inner {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.5s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .card-wrap.flipped .card-inner {
+    transform: rotateY(180deg);
+  }
+
+  .card-face, .card-back {
+    position: absolute;
+    inset: 0;
+    border-radius: 8px;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
+  .card-face {
+    background: var(--card-white);
+    border: 1px solid #ddd;
+    box-shadow: 2px 3px 10px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 5px 6px;
+    transform: rotateY(180deg);
+  }
+
+  .card-back {
+    background:
+      repeating-linear-gradient(45deg, #0e3cad 0px, #0e3cad 4px, #1a52c8 4px, #1a52c8 8px);
+    border: 2px solid #fff;
+    box-shadow: 2px 3px 10px rgba(0,0,0,0.5);
+  }
+  .card-back::after {
+    content: '🂠';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    color: rgba(255,255,255,0.15);
+  }
+
+  .card-corner {
+    line-height: 1.1;
+  }
+  .card-corner.bottom {
+    align-self: flex-end;
+    transform: rotate(180deg);
+  }
+
+  .card-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    line-height: 1;
+  }
+  .card-suit {
+    font-size: 13px;
+    line-height: 1;
+  }
+
+  .red-card .card-val, .red-card .card-suit { color: var(--red); }
+  .black-card .card-val, .black-card .card-suit { color: var(--black-card); }
+
+  /* Deal-in animation */
+  @keyframes dealIn {
+    from { opacity: 0; transform: translateY(-30px) scale(0.8); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .card-wrap { animation: dealIn 0.3s ease forwards; }
+
+  /* ─── BET ROW ─── */
+  .bet-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .bet-row label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 15px;
+    letter-spacing: 3px;
+    color: rgba(255,255,255,0.5);
+  }
+
+  .bet-control {
+    display: flex;
+    align-items: center;
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 5px;
+    overflow: hidden;
+  }
+  .bet-control button {
+    background: rgba(0,0,0,0.3);
+    border: none;
+    color: var(--gold);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    width: 30px;
+    height: 32px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .bet-control button:hover { background: rgba(240,192,64,0.2); }
+  .bet-control input {
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    width: 70px;
+    text-align: center;
+    outline: none;
+  }
+
+  #deal-btn {
+    background: linear-gradient(180deg, #f0c040 0%, #c07010 100%);
+    border: none;
+    border-bottom: 3px solid #804000;
+    color: #1a0800;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 3px;
+    padding: 8px 22px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.1s;
+  }
+  #deal-btn:hover { filter: brightness(1.1); }
+  #deal-btn:active { transform: translateY(2px); border-bottom-width: 1px; }
+  #deal-btn:disabled { background: #555; border-bottom-color: #333; color: #888; cursor: not-allowed; }
+
+  /* ─── STATUS ─── */
+  #status-msg {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 4px;
+    color: #fff;
+    text-shadow: 1px 1px 0 rgba(0,0,0,0.5);
+    min-height: 28px;
+    text-align: center;
+  }
+  #status-msg.win { color: var(--gta-money); text-shadow: 0 0 15px rgba(115,232,64,0.6); }
+  #status-msg.lose { color: #ff4422; text-shadow: 0 0 15px rgba(255,60,20,0.6); }
+  #status-msg.push { color: var(--gold); }
+
+  /* ─── ACTION BUTTONS ─── */
+  .action-row {
+    display: flex;
+    gap: 16px;
+  }
+
+  .action-btn {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 4px;
+    padding: 12px 40px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.1s;
+    position: relative;
+  }
+
+  #hit-btn {
+    background: linear-gradient(180deg, #f0c040 0%, #c07010 100%);
+    border-bottom: 4px solid #804000;
+    color: #1a0800;
+    box-shadow: 0 4px 15px rgba(240,192,64,0.3);
+  }
+  #hit-btn:hover { filter: brightness(1.1); box-shadow: 0 4px 25px rgba(240,192,64,0.5); }
+
+  #stand-btn {
+    background: linear-gradient(180deg, #e04020 0%, #901000 100%);
+    border-bottom: 4px solid #600800;
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(200,40,10,0.3);
+  }
+  #stand-btn:hover { filter: brightness(1.15); box-shadow: 0 4px 25px rgba(200,40,10,0.5); }
+
+  .action-btn:active { transform: translateY(2px); border-bottom-width: 2px; }
+  .action-btn:disabled {
+    background: #444 !important;
+    border-bottom-color: #222 !important;
+    color: #666 !important;
+    cursor: not-allowed;
+    box-shadow: none !important;
+    filter: none !important;
+  }
+
+  /* Divider line on felt */
+  .felt-divider {
+    width: 60%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+  }
+</style>
+</head>
+<body>
+
+<div id="table-wrap">
+
+  <!-- GTA Money HUD -->
+  <div id="money-hud">
+    <div class="label">wallet</div>
+    <div class="amount" id="hud-amount">0</div>
+  </div>
+
+  <!-- ═══ COIN SHOP SCREEN ═══ -->
+  <div class="screen active" id="shop-screen">
+    <h1>♠ BLACKJACK ♣</h1>
+    <div class="shop-subtitle">BUY YOUR CHIPS TO PLAY</div>
+
+    <!-- Coin Stack Visual -->
+    <div id="coin-stack-display"></div>
+
+    <!-- Coin amount selector -->
+    <div class="shop-row">
+      <label>Chips</label>
+      <div class="amount-control">
+        <button id="coins-minus">−</button>
+        <span id="coins-display">500</span>
+        <button id="coins-plus">+</button>
+      </div>
+    </div>
+
+    <!-- Add extra money -->
+    <div class="add-money-row">
+      <label>Add $</label>
+      <input type="number" id="add-money-input" placeholder="0" min="0">
+      <label>to wallet</label>
+    </div>
+
+    <button id="confirm-btn">CONFIRM →</button>
+  </div>
+
+  <!-- ═══ GAME SCREEN ═══ -->
+  <div class="screen" id="game-screen">
+
+    <div class="game-title">♠ BLACKJACK ♣ 21</div>
+
+    <!-- Dealer -->
+    <div class="dealer-zone">
+      <div class="zone-label">DEALER</div>
+      <div class="cards-row" id="dealer-cards"></div>
+      <div class="score-badge" id="dealer-score"></div>
+    </div>
+
+    <div class="felt-divider"></div>
+
+    <!-- Status -->
+    <div id="status-msg"></div>
+
+    <!-- Bet row -->
+    <div class="bet-row">
+      <label>BET</label>
+      <div class="bet-control">
+        <button id="bet-minus">−</button>
+        <input type="number" id="bet-input" value="100" min="1">
+        <button id="bet-plus">+</button>
+      </div>
+      <button id="deal-btn">DEAL</button>
+    </div>
+
+    <div class="felt-divider"></div>
+
+    <!-- Player -->
+    <div class="player-zone">
+      <div class="cards-row" id="player-cards"></div>
+      <div class="score-badge" id="player-score"></div>
+      <div class="zone-label">YOU</div>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="action-row">
+      <button class="action-btn" id="hit-btn" disabled>HIT</button>
+      <button class="action-btn" id="stand-btn" disabled>STAND</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─── STATE ───
+let coins = parseInt(localStorage.getItem('bjCoins') || '0');
+let deck = [], player = [], dealer = [];
+let bet = 100, gameActive = false;
+let shopCoins = 500;
+
+// ─── ELEMENTS ───
+const hudAmount   = document.getElementById('hud-amount');
+const shopScreen  = document.getElementById('shop-screen');
+const gameScreen  = document.getElementById('game-screen');
+const coinDisp    = document.getElementById('coins-display');
+const coinStack   = document.getElementById('coin-stack-display');
+const addMoneyInp = document.getElementById('add-money-input');
+const confirmBtn  = document.getElementById('confirm-btn');
+const dealerCardsEl = document.getElementById('dealer-cards');
+const playerCardsEl = document.getElementById('player-cards');
+const dealerScore = document.getElementById('dealer-score');
+const playerScore = document.getElementById('player-score');
+const statusMsg   = document.getElementById('status-msg');
+const dealBtn     = document.getElementById('deal-btn');
+const hitBtn      = document.getElementById('hit-btn');
+const standBtn    = document.getElementById('stand-btn');
+const betInput    = document.getElementById('bet-input');
+
+// ─── COIN STACK ───
+function renderCoinStack(amount) {
+  coinStack.innerHTML = '';
+  const layers = Math.min(Math.max(Math.floor(amount / 200), 1), 8);
+  for (let i = 0; i < layers; i++) {
+    const c = document.createElement('div');
+    c.className = 'coin-layer';
+    c.style.bottom = (i * 9) + 'px';
+    coinStack.appendChild(c);
+  }
 }
 
+document.getElementById('coins-minus').onclick = () => {
+  shopCoins = Math.max(100, shopCoins - 100);
+  coinDisp.textContent = shopCoins;
+  renderCoinStack(shopCoins);
+};
+document.getElementById('coins-plus').onclick = () => {
+  shopCoins = Math.min(10000, shopCoins + 100);
+  coinDisp.textContent = shopCoins;
+  renderCoinStack(shopCoins);
+};
+renderCoinStack(shopCoins);
+
+// ─── CONFIRM ───
+confirmBtn.onclick = () => {
+  const extra = parseInt(addMoneyInp.value) || 0;
+  coins += shopCoins + extra;
+  saveCoins();
+  updateHUD();
+  shopScreen.classList.remove('active');
+  gameScreen.classList.add('active');
+  betInput.value = Math.min(100, coins);
+  bet = parseInt(betInput.value);
+};
+
+// ─── HUD ───
+function updateHUD() {
+  hudAmount.textContent = coins.toLocaleString();
+}
+function saveCoins() {
+  localStorage.setItem('bjCoins', coins);
+}
+updateHUD();
+
+// ─── BET CONTROLS ───
+document.getElementById('bet-minus').onclick = () => {
+  bet = Math.max(1, (parseInt(betInput.value)||1) - 50);
+  betInput.value = bet;
+};
+document.getElementById('bet-plus').onclick = () => {
+  bet = Math.min(coins, (parseInt(betInput.value)||1) + 50);
+  betInput.value = bet;
+};
+betInput.oninput = () => {
+  bet = Math.min(coins, Math.max(1, parseInt(betInput.value)||1));
+};
+
+// ─── DECK ───
+function buildDeck() {
+  const suits = ['♠','♥','♦','♣'];
+  const vals  = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+  deck = [];
+  for (let s of suits) for (let v of vals) deck.push({v, s});
+  deck.sort(() => Math.random() - 0.5);
+}
+
+function cardVal(c) {
+  if (c.v === 'A') return 11;
+  if (['K','Q','J'].includes(c.v)) return 10;
+  return parseInt(c.v);
+}
+function handVal(hand) {
+  let t = 0, aces = 0;
+  for (let c of hand) { t += cardVal(c); if (c.v === 'A') aces++; }
+  while (t > 21 && aces-- > 0) t -= 10;
+  return t;
+}
+
+// ─── CARD RENDERING ───
+function isRed(suit) { return suit === '♥' || suit === '♦'; }
+
+function makeCardEl(card, faceDown = false, delay = 0) {
+  const wrap = document.createElement('div');
+  wrap.className = 'card-wrap';
+  wrap.style.animationDelay = delay + 'ms';
+
+  const inner = document.createElement('div');
+  inner.className = 'card-inner';
+
+  const back = document.createElement('div');
+  back.className = 'card-back';
+
+  const face = document.createElement('div');
+  face.className = 'card-face ' + (isRed(card.s) ? 'red-card' : 'black-card');
+
+  const topCorner = document.createElement('div');
+  topCorner.className = 'card-corner';
+  topCorner.innerHTML = `<div class="card-val">${card.v}</div><div class="card-suit">${card.s}</div>`;
+
+  const botCorner = document.createElement('div');
+  botCorner.className = 'card-corner bottom';
+  botCorner.innerHTML = `<div class="card-val">${card.v}</div><div class="card-suit">${card.s}</div>`;
+
+  face.appendChild(topCorner);
+  face.appendChild(botCorner);
+  inner.appendChild(back);
+  inner.appendChild(face);
+  wrap.appendChild(inner);
+
+  if (!faceDown) {
+    setTimeout(() => wrap.classList.add('flipped'), delay + 50);
+  }
+
+  return wrap;
+}
+
+function renderCards(dealerReveal = false) {
+  dealerCardsEl.innerHTML = '';
+  playerCardsEl.innerHTML = '';
+
+  dealer.forEach((c, i) => {
+    const faceDown = !dealerReveal && i === 1;
+    const el = makeCardEl(c, faceDown, i * 120);
+    dealerCardsEl.appendChild(el);
+  });
+
+  player.forEach((c, i) => {
+    const el = makeCardEl(c, false, i * 120);
+    playerCardsEl.appendChild(el);
+  });
+
+  playerScore.textContent = handVal(player);
+  dealerScore.textContent = dealerReveal
+    ? handVal(dealer)
+    : dealer[0].v === 'A' ? '11 / 1' : cardVal(dealer[0]);
+}
+
+// ─── GAME LOGIC ───
+dealBtn.onclick = () => {
+  if (gameActive) return;
+  bet = Math.max(1, parseInt(betInput.value) || 1);
+  if (bet > coins) { setStatus('Not enough chips!', ''); return; }
+
+  buildDeck();
+  player = [deck.pop(), deck.pop()];
+  dealer = [deck.pop(), deck.pop()];
+  coins -= bet;
+  saveCoins(); updateHUD();
+  gameActive = true;
+
+  hitBtn.disabled = false;
+  standBtn.disabled = false;
+  dealBtn.disabled = true;
+  setStatus('Good luck! 🍀', '');
+  renderCards(false);
+};
+
+hitBtn.onclick = () => {
+  if (!gameActive) return;
+  player.push(deck.pop());
+  renderCards(false);
+  if (handVal(player) > 21) {
+    setTimeout(() => endGame('BUST! You lose 💀', 'lose'), 400);
+  }
+};
+
+standBtn.onclick = () => {
+  if (!gameActive) return;
+  hitBtn.disabled = true;
+  standBtn.disabled = true;
+
+  // Reveal dealer then draw
+  renderCards(true);
+  setTimeout(() => {
+    let delay = 0;
+    const drawNext = () => {
+      if (handVal(dealer) < 17) {
+        dealer.push(deck.pop());
+        renderCards(true);
+        delay += 400;
+        setTimeout(drawNext, 400);
+      } else {
+        const p = handVal(player), d = handVal(dealer);
+        if (d > 21 || p > d) {
+          coins += bet * 2; saveCoins(); updateHUD();
+          endGame('YOU WIN! 🤑', 'win');
+        } else if (p === d) {
+          coins += bet; saveCoins(); updateHUD();
+          endGame('PUSH 🤝', 'push');
+        } else {
+          endGame('DEALER WINS 😔', 'lose');
+        }
+      }
+    };
+    drawNext();
+  }, 500);
+};
+
+function endGame(msg, type) {
+  gameActive = false;
+  hitBtn.disabled = true;
+  standBtn.disabled = true;
+  dealBtn.disabled = false;
+  renderCards(true);
+  setStatus(msg, type);
+  if (coins <= 0) {
+    setTimeout(() => {
+      shopScreen.classList.add('active');
+      gameScreen.classList.remove('active');
+      addMoneyInp.value = '';
+    }, 1800);
+  }
+}
+
+function setStatus(msg, type) {
+  statusMsg.textContent = msg;
+  statusMsg.className = '';
+  if (type) statusMsg.classList.add(type);
+}
+</script>
+</body>
+</html>
 button {
     margin: 5px;
     padding: 10px 16px;
